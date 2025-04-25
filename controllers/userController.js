@@ -1,139 +1,231 @@
 const User = require('../models/user');
 
+const Demande = require('../models/demande');
+const bcrypt = require('bcryptjs');
+
+
+
 exports.createUser = async (req, res) => {
   try {
-    const newUser = new User(req.body);
-    const saved = await newUser.save();
-    res.status(201).json({ message: "Utilisateur créé avec succès", user: saved });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-///fonction pour ajouter une formation
-exports.addFormation = async (req, res) => {
-  const userId = req.params.id;
-  const newFormation = req.body.formation;
+    const { userType, password, ...userData } = req.body;
 
-  try {
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $push: { formations: newFormation } },
-      { new: true, runValidators: true }
-    );
-
-    if (!user) {
-      return res.status(404).json({ error: "Utilisateur non trouvé" });
+    if (!['client', 'prestataire'].includes(userType)) {
+      return res.status(400).json({ message: 'Type d\'utilisateur invalide' });
     }
 
-    res.status(200).json({ message: "Formation ajoutée avec succès", user });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
+    // Cas particulier: prestataire avec inscription assistée
+    if (userType === 'prestataire' && userData.type_inscription === 'assister') {
+      if (!userData.telephone) {
+        return res.status(400).json({ message: 'Le téléphone est requis pour une inscription assistée' });
+      }
 
-///fonction pour ajouter une experience
-exports.addExperience = async (req, res) => {
-  const userId = req.params.id;
-  const newExperience = req.body.experience;
+      // Création de la demande
+      const nouvelleDemande = new Demande({
+        telephone: userData.telephone
+      });
 
-  console.log("Nouvelle expérience reçue :", newExperience);
+      await nouvelleDemande.save();
 
-  try {
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $push: { experiences: newExperience } },
-      { new: true, runValidators: true }
-    );
+      return res.status(201).json({
+        message: 'Demande d\'inscription assistée créée avec succès',
+        demande: nouvelleDemande
+      });
+    }
 
-    if (!user) return res.status(404).json({ error: "Utilisateur non trouvé" });
+    // Reste de la logique pour les clients et prestataires avec inscription complète
+    if (userType === 'client') {
+      if (!userData.tel) {
+        return res.status(400).json({ message: 'L\'tel est requis pour un client' });
+      }
+    } else { // Prestataire avec inscription complète
+      const requiredFields = ['info_person', 'experience'];
+      for (const field of requiredFields) {
+        if (!userData[field]) {
+          return res.status(400).json({ message: `Le champ ${field} est requis pour une inscription complète` });
+        }
+      }
+    }
 
-    res.status(200).json({ message: "Expérience ajoutée avec succès", user });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-
-// Ajouter une langue dans le cv
-exports.addLangue = async (req, res) => {
-  const userId = req.params.id;
-  const newLangue = req.body.langue;
-
-  try {
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $push: { langues: newLangue } },
-      { new: true, runValidators: true }
-    );
-
-    if (!user) return res.status(404).json({ error: "Utilisateur non trouvé" });
-
-    res.status(200).json({ message: "Langue ajoutée avec succès", user });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-
-//fonction Ajouter une compétence
-exports.addCompetence = async (req, res) => {
-  const userId = req.params.id;
-  const newCompetence = req.body.competence;
-
-  try {
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $push: { competences: newCompetence } },
-      { new: true, runValidators: true }
-    );
-
-    if (!user) return res.status(404).json({ error: "Utilisateur non trouvé" });
-
-    res.status(200).json({ message: "Compétence ajoutée avec succès", user });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-
-//notre fonction Ajouter un loisir
-exports.addLoisir = async (req, res) => {
-  const userId = req.params.id;
-  const newLoisir = req.body.loisir;
-
-  try {
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $push: { loisirs: newLoisir } },
-      { new: true, runValidators: true }
-    );
-
-    if (!user) return res.status(404).json({ error: "Utilisateur non trouvé" });
-
-    res.status(200).json({ message: "Loisir ajouté avec succès", user });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-
-// exports.searchUser = async (req, res) => {
-//   let user = await User.find();
-//   res.send(user)
-//   // res.status(200).json({ user });
-// }
-exports.searchUser = async (req, res) => {
-  const query = req.params.key;
-
-  try {
-    let  user = await User.findOne({
+    // Vérification tel existant
+    const telToCheck = userType === 'client' ? userData.tel : userData.info_person.tel;
+    const existingUser = await User.findOne({
       $or: [
-        { name: { $regex: query, $options: 'i' } },
-        { email: { $regex: query, $options: 'i' } },
-        // { telephone: { $regex: query, $options: 'i' } }
+        { tel: telToCheck },
+        { 'info_person.tel': telToCheck }
       ]
     });
 
-    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Cet tel est déjà utilisé' });
+    }
 
-    res.status(200).json({ user });
+    // Hashage du mot de passe
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Création de l'utilisateur
+    const newUser = new User({
+      ...userData,
+      userType,
+      password: hashedPassword
+    });
+
+    await newUser.save();
+
+    const userToReturn = newUser.toObject();
+    delete userToReturn.password;
+
+    res.status(201).json({
+      message: 'Utilisateur créé avec succès',
+      user: userToReturn
+    });
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Erreur:', error);
+    res.status(500).json({
+      message: 'Erreur lors de la création',
+      error: error.message
+    });
   }
 };
+
+
+
+
+// exports.listClients = async (req, res) => {
+//   try {
+//     const clients = await User.find({ userType: 'client' })
+//       .select('-password -__v') // Exclure les champs sensibles
+//       .lean(); // Convertir en objet JavaScript
+
+//     // Formater la réponse
+//     const formattedClients = clients.map(client => ({
+//       _id: client._id,
+//       tel: client.tel,
+//       createdAt: client.createdAt,
+//       updatedAt: client.updatedAt
+//     }));
+
+//     res.json({
+//       success: true,
+//       count: formattedClients.length,
+//       data: formattedClients
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: 'Erreur lors de la récupération des clients',
+//       error: error.message
+//     });
+//   }
+// };
+
+
+exports.listClients = async (req, res) => {
+  try {
+    const clients = await User.find({ userType: 'client' }).select('-password');;
+    res.status(200).json({ success: true,
+      count: clients.length,
+      data: clients
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des clients', error: err });
+  }
+};
+
+
+// exports.listPrestataires = async (req, res) => {
+//   try {
+//     const prestataires = await User.find({ userType: 'prestataire' })
+//       .select('-password -__v') // Exclure les champs sensibles
+//       .lean();
+
+//     const formattedPrestataires = prestataires.map(presta => ({
+//       _id: presta._id,
+//       info_person: {
+//         prenom: presta.info_person.prenom,
+//         nom: presta.info_person.nom,
+//         email: presta.info_person.email,
+//         tel: presta.info_person.tel,
+//         addresse: presta.info_person.addresse
+//       },
+//       experience: {
+//         annee: presta.experience.annee,
+//         specialite: presta.experience.specialite,
+//         disponibilite: presta.experience.disponibilite,
+//         tarif: presta.experience.tarif
+//       },
+//       document: {
+//         photo_profi: presta.document.photo_profi,
+//         cv: presta.document.cv,
+//         certification: presta.document.certification
+//       },
+//       createdAt: presta.createdAt,
+//       updatedAt: presta.updatedAt
+//     }));
+
+//     res.json({
+//       success: true,
+//       count: formattedPrestataires.length,
+//       data: formattedPrestataires
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: 'Erreur lors de la récupération des prestataires',
+//       error: error.message
+//     });
+//   }
+// };
+exports.listPrestataires = async (req, res) => {
+  try {
+    
+    
+    const prestataires = await User.find({ userType: 'prestataire' })
+      .select('-password')
+      .populate('experience.specialite'); // <<–– remplissage des services
+
+    res.status(200).json({
+      success: true,
+      count: prestataires.length,
+      data: prestataires
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des prestataires',
+      error: err.message
+    });
+  }
+};
+
+exports.recherchePrestataires = async (req, res) => {
+  try {
+    const { id: serviceId, localocation: localisation } = req.params;
+
+    if (!localisation || !serviceId) {
+      return res.status(400).json({ message: 'Localisation et service requis.' });
+    }
+
+    const prestataires = await User.find({
+      userType: 'prestataire',
+      'info_person.addresse': localisation,
+      'experience.specialite': serviceId  // serviceId est un ObjectId
+    })
+    .select('-password')
+    .populate('experience.specialite', 'nom tarif_horaire'); // Pour afficher les infos du service
+
+    res.status(200).json({
+      success: true,
+      count: prestataires.length,
+      data: prestataires
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la recherche des prestataires',
+      error: err.message
+    });
+  }
+};
+
+

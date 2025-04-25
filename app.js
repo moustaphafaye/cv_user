@@ -4,6 +4,7 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 require('dotenv').config();
 
+
 const app = express();
 app.use(express.json());
 // Middleware
@@ -15,7 +16,13 @@ connectDB();
 
 // Routes
 const userRoutes = require('./routes/userRoutes');
-app.use('/api', userRoutes);
+const serviceRoutes = require('./routes/serviceRoutes');
+const reservationRoutes = require('./routes/reservationRoutes');
+const loginRoute = require('./routes/loginRoutes');
+app.use('/api/users', userRoutes);
+app.use('/api/services', serviceRoutes);
+app.use('/api/authentification', loginRoute);
+app.use('/api/reservations', reservationRoutes);
 
 // Gestion des erreurs
 app.use((err, req, res, next) => {

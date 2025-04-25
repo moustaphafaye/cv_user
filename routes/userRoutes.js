@@ -2,16 +2,30 @@ const express = require('express');
 const router = express.Router();
 // const { createUser, addFormation } = require('../controllers/userController');
 const userController = require('../controllers/userController');
+const authController = require('../controllers/authController');
+const { authenticate } = require('../middlewares/auth');
 
-// router.get('/users/search/:key', userController.searchUser);
-router.get('/search/:key', userController.searchUser);
-router.post('/users', userController.createUser);
-router.patch('/users/:id/formation', userController.addFormation);
-router.patch('/users/:id/experience', userController.addExperience);
-// router.patch('/users/:id/formation', userController.addFormation);
-router.patch('/users/:id/langue', userController.addLangue);
-router.patch('/users/:id/competence', userController.addCompetence);
-router.patch('/users/:id/loisir', userController.addLoisir);
+
+// const userValidationRules = require('../validators/userValidator');
+// const {
+//     validateCreateUser,
+//     validateFormation,
+//     validateExperience,
+//     validateLangue,
+//     validateCompetence,
+//     validateLoisir
+// } = require('../validators/userValidator');
+// const validateRequest = require('../middlewares/validateRequest');
+
+
+router.post('/create', userController.createUser);
+router.get('/clients', authenticate ,userController.listClients);
+router.get('/prestataires',userController.listPrestataires);
+router.get('/prestataires/recherche/:id/:localocation', userController.recherchePrestataires);
+
+
+
+
 
 
 module.exports = router;
