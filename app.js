@@ -7,6 +7,8 @@ require('dotenv').config();
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Middleware
 app.use(bodyParser.json());
 app.use(cors());
@@ -19,10 +21,16 @@ const userRoutes = require('./routes/userRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
 const reservationRoutes = require('./routes/reservationRoutes');
 const loginRoute = require('./routes/loginRoutes');
+const avisRoutes = require('./routes/avisRoutes');
+const ticketRoutes = require('./routes/ticketRoutes');
+const transactionRoutes = require('./routes/transactionRoutes');
 app.use('/api/users', userRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/authentification', loginRoute);
 app.use('/api/reservations', reservationRoutes);
+app.use('/api/avis', avisRoutes);
+app.use('/api/tickets', ticketRoutes);
+app.use('/api/transactions', transactionRoutes);
 
 // Gestion des erreurs
 app.use((err, req, res, next) => {

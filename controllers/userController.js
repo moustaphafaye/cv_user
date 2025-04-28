@@ -91,29 +91,86 @@ exports.createUser = async (req, res) => {
 
 
 
-// exports.listClients = async (req, res) => {
+// exports.createUser = async (req, res) => {
 //   try {
-//     const clients = await User.find({ userType: 'client' })
-//       .select('-password -__v') // Exclure les champs sensibles
-//       .lean(); // Convertir en objet JavaScript
+//     const { userType, password, ...userData } = req.body;
 
-//     // Formater la réponse
-//     const formattedClients = clients.map(client => ({
-//       _id: client._id,
-//       tel: client.tel,
-//       createdAt: client.createdAt,
-//       updatedAt: client.updatedAt
-//     }));
+//     if (!['client', 'prestataire'].includes(userType)) {
+//       return res.status(400).json({ message: 'Type d\'utilisateur invalide' });
+//     }
 
-//     res.json({
-//       success: true,
-//       count: formattedClients.length,
-//       data: formattedClients
+//     // Gestion spécifique pour prestataire assisté
+//     if (userType === 'prestataire' && userData.type_inscription === 'assister') {
+//       if (!userData.telephone) {
+//         return res.status(400).json({ message: 'Le téléphone est requis pour une inscription assistée' });
+//       }
+
+//       const nouvelleDemande = new Demande({
+//         telephone: userData.telephone
+//       });
+
+//       await nouvelleDemande.save();
+
+//       return res.status(201).json({
+//         message: 'Demande d\'inscription assistée créée avec succès',
+//         demande: nouvelleDemande
+//       });
+//     }
+
+//     // Pour client ou prestataire complet
+//     if (userType === 'client') {
+//       if (!userData.tel) {
+//         return res.status(400).json({ message: 'Le téléphone est requis pour un client' });
+//       }
+//     } else { // Prestataire complet
+//       const requiredFields = ['info_person', 'experience'];
+//       for (const field of requiredFields) {
+//         if (!userData[field]) {
+//           return res.status(400).json({ message: `Le champ ${field} est requis pour une inscription complète` });
+//         }
+//       }
+//     }
+
+//     // Vérification de tel existant
+//     const telToCheck = userType === 'client' ? userData.tel : userData.info_person.tel;
+//     const existingUser = await User.findOne({
+//       $or: [
+//         { tel: telToCheck },
+//         { 'info_person.tel': telToCheck }
+//       ]
 //     });
+
+//     if (existingUser) {
+//       return res.status(400).json({ message: 'Ce téléphone est déjà utilisé' });
+//     }
+
+//     // Hash du mot de passe
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+   
+//     const newUser = new User({
+//       ...userData,
+//       userType,
+//       password: hashedPassword,
+//       photo_profi,
+//       cv,
+//       certification
+//     });
+
+//     await newUser.save();
+
+//     const userToReturn = newUser.toObject();
+//     delete userToReturn.password;
+
+//     res.status(201).json({
+//       message: 'Utilisateur créé avec succès',
+//       user: userToReturn
+//     });
+
 //   } catch (error) {
+//     console.error('Erreur:', error);
 //     res.status(500).json({
-//       success: false,
-//       message: 'Erreur lors de la récupération des clients',
+//       message: 'Erreur lors de la création',
 //       error: error.message
 //     });
 //   }
@@ -123,7 +180,8 @@ exports.createUser = async (req, res) => {
 exports.listClients = async (req, res) => {
   try {
     const clients = await User.find({ userType: 'client' }).select('-password');;
-    res.status(200).json({ success: true,
+    res.status(200).json({
+      success: true,
       count: clients.length,
       data: clients
     });
@@ -178,8 +236,8 @@ exports.listClients = async (req, res) => {
 // };
 exports.listPrestataires = async (req, res) => {
   try {
-    
-    
+
+
     const prestataires = await User.find({ userType: 'prestataire' })
       .select('-password')
       .populate('experience.specialite'); // <<–– remplissage des services
@@ -211,8 +269,8 @@ exports.recherchePrestataires = async (req, res) => {
       'info_person.addresse': localisation,
       'experience.specialite': serviceId  // serviceId est un ObjectId
     })
-    .select('-password')
-    .populate('experience.specialite', 'nom tarif_horaire'); // Pour afficher les infos du service
+      .select('-password')
+      .populate('experience.specialite', 'nom tarif_horaire'); // Pour afficher les infos du service
 
     res.status(200).json({
       success: true,

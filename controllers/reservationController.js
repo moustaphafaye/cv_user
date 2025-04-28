@@ -224,7 +224,7 @@ exports.updateReservation = async (req, res) => {
       id,
       updates,
       { new: true, runValidators: true }
-    ).populate('service client');
+    ).populate('service');
 
     if (!reservation) {
       return res.status(404).json({

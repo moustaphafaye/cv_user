@@ -58,11 +58,18 @@ const userSchema = new mongoose.Schema({
             required: function () { return this.userType === 'prestataire'; }
         }
     },
-    document: {
-        photo_profi: String,
-        cv: String,
-        certification: String
+    photo_profi: {
+        type: String,
+        required: function() { return this.userType === 'prestataire'; }
     },
+    cv: {
+        type: String,
+        required: function() { return this.userType === 'prestataire'; }
+    },
+    certification: {
+        type: String,
+        required: function() { return this.userType === 'prestataire'; }
+    }
     
 }, { timestamps: true });
 
