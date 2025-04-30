@@ -1,6 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const formData = require("express-form-data");
 const cors = require('cors');
+const os = require("os");
 const connectDB = require('./config/db');
 require('dotenv').config();
 
@@ -12,6 +14,18 @@ app.use(express.urlencoded({ extended: true }));
 // Middleware
 app.use(bodyParser.json());
 app.use(cors());
+
+
+// const options = {
+//   uploadDir: os.tmpdir(),
+//   autoClean: true
+// };
+
+// app.use(formData.parse(options));
+// app.use(formData.format()); 
+// app.use(formData.stream());
+// app.use(formData.union());
+
 
 // Connexion à la base de données
 connectDB();

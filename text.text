@@ -1,86 +1,131 @@
-// exports.createReservation = async (req, res) => {
+///////////////******** INSCRIPTION COMPLET POUR PRESTATAIRE ********///////////////
+
+// {
+//     "userType"	:"prestataire",
+//     "password":	"motdepasse123",
+//     "info_person":	{ "prenom": "Amina", "nom": "Diop", "email": "aminaalpha.diop@example.com", "tel": "+221780060110", "addresse": "123 Rue de Dakar, Sénégal" },
+//     "experience":	{ "annee": 3, "specialite": [{"_id": "68090be8a6838d4307481305"}, {"_id": "6808cb008996d3ef442e6221"}], "disponibilite": ["Lundi matin", "Mercredi apres midi"], "tarif": 15000 },
+//     "photo_profi"	: "phofil.png",
+//     "cv": "cv.png",
+//     "certification":"certification.pnp"
+// }
+
+///////////////******** CLIENT ********///////////////
+
+// {
+//     "userType"	:"client",
+//     "tel":	"+221762341121",
+//     "password":"passer1234"
+// }
+
+
+///////////////******** INSCRIPTION PRESTATAIRE AVEC ASSISTANCE ********///////////////
+
+
+{
+  "userType": "prestataire",
+  "type_inscription": "assister",
+  "telephone": "+221791234567"
+}
+
+
+
+ // if (req.files['photo_profi']) {
+    //   userData.photo_profi = req.files['photo_profi'][0].path;
+    // }
+    // if (req.files['cv']) {
+    //   userData.cv = req.files['cv'][0].path;
+    // }
+    // if (req.files['certification']) {
+    //   userData.certification = req.files['certification'][0].path;
+    // }
+  
+
+
+
+
+// exports.createUser = async (req, res) => {
 //   try {
-//     const { service, prestataire, ...reservationData } = req.body;
+//     const { userType, password, ...userData } = req.body;
 
-//     // Validation des champs obligatoires (sans prestataire)
-//     const requiredFields = ['service', 'date', 'heure', 'duree', 'adresse', 'nom_complet', 'telephone', 'email'];
-//     const missingFields = requiredFields.filter(field => !req.body[field]);
+//     if (!['client', 'prestataire'].includes(userType)) {
+//       return res.status(400).json({ message: 'Type d\'utilisateur invalide' });
+//     }
 
-//     if (missingFields.length > 0) {
-//       return res.status(400).json({
-//         success: false,
-//         message: `Champs requis manquants: ${missingFields.join(', ')}`
+//     // Gestion spécifique pour prestataire assisté
+//     if (userType === 'prestataire' && userData.type_inscription === 'assister') {
+//       if (!userData.telephone) {
+//         return res.status(400).json({ message: 'Le téléphone est requis pour une inscription assistée' });
+//       }
+
+//       const nouvelleDemande = new Demande({
+//         telephone: userData.telephone
+//       });
+
+//       await nouvelleDemande.save();
+
+//       return res.status(201).json({
+//         message: 'Demande d\'inscription assistée créée avec succès',
+//         demande: nouvelleDemande
 //       });
 //     }
 
-//     // Vérification du service
-//     const serviceExists = await Service.findById(service);
-//     if (!serviceExists) {
-//       return res.status(404).json({
-//         success: false,
-//         message: 'Service non trouvé'
-//       });
-//     }
-
-//     // Vérification optionnelle du prestataire si fourni
-//     if (prestataire) {
-//       const prestataireExists = await User.findOne({
-//         _id: prestataire,
-//         userType: 'prestataire',
-//         'experience.specialite': service
-//       });
-
-//       if (!prestataireExists) {
-//         return res.status(400).json({
-//           success: false,
-//           message: 'Prestataire non valide ou ne proposant pas ce service'
-//         });
+//     // Pour client ou prestataire complet
+//     if (userType === 'client') {
+//       if (!userData.tel) {
+//         return res.status(400).json({ message: 'Le téléphone est requis pour un client' });
+//       }
+//     } else { // Prestataire complet
+//       const requiredFields = ['info_person', 'experience'];
+//       for (const field of requiredFields) {
+//         if (!userData[field]) {
+//           return res.status(400).json({ message: `Le champ ${field} est requis pour une inscription complète` });
+//         }
 //       }
 //     }
 
-//     // Validation de la date
-//     const reservationDate = new Date(reservationData.date);
-//     if (reservationDate < new Date()) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'La date de réservation doit être dans le futur'
-//       });
-//     }
-
-//     // Création de la réservation
-//     const newReservation = new Reservation({
-//       service,
-//       prestataire: prestataire || null, // Peut être null
-//       ...reservationData,
-//       status: 'pending',
-//       client: req.userId || null,
-//       isAnonymous: !req.userId
+//     // Vérification de tel existant
+//     const telToCheck = userType === 'client' ? userData.tel : userData.info_person.tel;
+//     const existingUser = await User.findOne({
+//       $or: [
+//         { tel: telToCheck },
+//         { 'info_person.tel': telToCheck }
+//       ]
 //     });
 
-//     await newReservation.save();
+//     if (existingUser) {
+//       return res.status(400).json({ message: 'Ce téléphone est déjà utilisé' });
+//     }
 
-//     // Population des données
-//     const result = await Reservation.findById(newReservation._id)
-//       .populate('service', 'nom description')
-//       .populate({
-//         path: 'prestataire',
-//         select: 'info_person.nom info_person.prenom',
-//         match: { _id: { $exists: true } } // Ne peuplera que si prestataire existe
-//       });
+//     // Hash du mot de passe
+//     const hashedPassword = await bcrypt.hash(password, 10);
 
+
+//     const newUser = new User({
+//       ...userData,
+//       userType,
+//       password: hashedPassword,
+//       photo_profi,
+//       cv,
+//       certification
+//     });
+
+//     await newUser.save();
+
+//     const userToReturn = newUser.toObject();
+//     delete userToReturn.password;
 
 //     res.status(201).json({
-//       success: true,
-//       message: 'Réservation créée avec succès',
-//       data: result
+//       message: 'Utilisateur créé avec succès',
+//       user: userToReturn
 //     });
 
 //   } catch (error) {
-//     console.error('Erreur création réservation:', error);
+//     console.error('Erreur:', error);
 //     res.status(500).json({
-//       success: false,
-//       message: 'Erreur lors de la création de la réservation',
+//       message: 'Erreur lors de la création',
 //       error: error.message
 //     });
 //   }
 // };
+

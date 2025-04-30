@@ -60,17 +60,17 @@ const userSchema = new mongoose.Schema({
     },
     photo_profi: {
         type: String,
-        required: function() { return this.userType === 'prestataire'; }
+        required: false
     },
     cv: {
         type: String,
-        required: function() { return this.userType === 'prestataire'; }
+        required: false
     },
     certification: {
         type: String,
-        required: function() { return this.userType === 'prestataire'; }
+        required: false
     }
-    
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
