@@ -11,7 +11,7 @@ exports.authenticate = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET,{ expiresIn: '1h' });
     
     // Ajout des informations utilisateur à la requête
     req.user = {

@@ -255,49 +255,6 @@ exports.listClients = async (req, res) => {
 };
 
 
-// exports.listPrestataires = async (req, res) => {
-//   try {
-//     const prestataires = await User.find({ userType: 'prestataire' })
-//       .select('-password -__v') // Exclure les champs sensibles
-//       .lean();
-
-//     const formattedPrestataires = prestataires.map(presta => ({
-//       _id: presta._id,
-//       info_person: {
-//         prenom: presta.info_person.prenom,
-//         nom: presta.info_person.nom,
-//         email: presta.info_person.email,
-//         tel: presta.info_person.tel,
-//         addresse: presta.info_person.addresse
-//       },
-//       experience: {
-//         annee: presta.experience.annee,
-//         specialite: presta.experience.specialite,
-//         disponibilite: presta.experience.disponibilite,
-//         tarif: presta.experience.tarif
-//       },
-//       document: {
-//         photo_profi: presta.document.photo_profi,
-//         cv: presta.document.cv,
-//         certification: presta.document.certification
-//       },
-//       createdAt: presta.createdAt,
-//       updatedAt: presta.updatedAt
-//     }));
-
-//     res.json({
-//       success: true,
-//       count: formattedPrestataires.length,
-//       data: formattedPrestataires
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       message: 'Erreur lors de la récupération des prestataires',
-//       error: error.message
-//     });
-//   }
-// };
 exports.listPrestataires = async (req, res) => {
   try {
 
@@ -365,6 +322,25 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ success: false, message: 'Erreur serveur', error: error.message });
   }
 };
+
+
+// Exemple avec un middleware d'authentification qui met l'ID du user dans req.userId
+
+exports.getUserPhoto = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('photo_profi');
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    res.status(200).json({ photo_profi: user.photo_profi });
+  } catch (error) {
+    console.error("Erreur récupération photo:", error);
+    res.status(500).json({ message: "Erreur serveur", error: error.message });
+  }
+};
+
 
 
 

@@ -48,7 +48,7 @@ exports.login = async (req, res) => {
     };
 
     // Génération du token
-    const token = jwt.sign(userData, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign(userData, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     // Réponse
     const response = {

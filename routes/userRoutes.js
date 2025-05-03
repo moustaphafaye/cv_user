@@ -20,6 +20,7 @@ router.get('/clients', authenticate ,userController.listClients);
 router.delete('/delete/:id', authenticate ,userController.deleteUser);
 router.get('/prestataires',userController.listPrestataires);
 router.get('/prestataires/recherche/:id/:localocation', userController.recherchePrestataires);
+router.get('/me/photo/:id', authenticate, userController.getUserPhoto);
 
 
 
