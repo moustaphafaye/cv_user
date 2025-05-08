@@ -68,10 +68,10 @@ const reservationSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    created_at: {
-        type: Date,
-        default: Date.now
-    }
-});
+    // created_at: {
+    //     type: Date,
+    //     default: Date.now
+    // }
+},{ timestamps: true });
 
 module.exports = mongoose.model('Reservation', reservationSchema);

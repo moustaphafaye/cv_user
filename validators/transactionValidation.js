@@ -1,28 +1,32 @@
 exports.validateTransactionData = (data) => {
-    const errors = {};
+  const errors = {};
 
-    // Vérifier le nom du client
-    if (!data.nom_client || data.nom_client.trim() === '') {
-      errors.nom_client = "Le nom du client est requis";
-    }
-  
-    // Vérifier le montant
-    if (!data.montant || isNaN(data.montant) || data.montant <= 0) {
-      errors.montant = "Le montant doit être un nombre positif";
-    }
-  
-    // Vérifier le type de transaction
-    const validTypes = ['paiement', 'remboursement'];
-    if (!data.type || !validTypes.includes(data.type)) {
-      errors.type = "Le type de transaction doit être 'paiement' ou 'remboursement'";
-    }
-  
-    // Vérifier le statut de la transaction
-    const validStatuses = ['complet', 'en attente', 'échoué'];
-    if (!data.statut || !validStatuses.includes(data.statut)) {
-      errors.statut = "Le statut doit être 'complet', 'en attente' ou 'échoué'";
-    }
-  
-    return errors;
-  };
-  
+  // Vérification du client
+  if (!data.client || data.client.trim() === '') {
+    errors.client = "Le nom du client est requis";
+  }
+
+  // Vérification du montant
+  if (!data.amount || isNaN(data.amount) || data.amount <= 0) {
+    errors.amount = "Le montant doit être un nombre positif";
+  }
+
+  // Vérification du type
+  const validTypes = ['payment_link', 'payment', 'remboursement'];
+  if (!data.type || !validTypes.includes(data.type)) {
+    errors.type = "Le type doit être 'payment_link', 'payment' ou 'remboursement'";
+  }
+
+  // Vérification du status
+  const validStatus = ['complet', 'en attente', 'échoué'];
+  if (!data.status || !validStatus.includes(data.status)) {
+    errors.status = "Le status doit être 'complet', 'en attente' ou 'échoué'";
+  }
+
+  // Vérification du téléphone
+  if (!data.phone || data.phone.trim() === '') {
+    errors.phone = "Le numéro de téléphone est requis";
+  }
+
+  return errors;
+};

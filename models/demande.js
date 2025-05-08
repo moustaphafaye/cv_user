@@ -11,15 +11,11 @@ const demandeSchema = new mongoose.Schema({
     enum: ['en_attente', 'approuvé', 'rejeté'],
     default: 'en_attente'
   },
-  date_creation: {
-    type: Date,
-    default: Date.now
-  },
-  date_traitement: Date,
+ 
   processed_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User' // Référence à l'admin qui a traité la demande
   }
-});
+},{ timestamps: true });
 
 module.exports = mongoose.model('Demande', demandeSchema);

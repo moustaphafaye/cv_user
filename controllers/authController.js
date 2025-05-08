@@ -1,6 +1,59 @@
 const User = require('../models/user');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { addToBlacklist } = require('../middlewares/blacklist'); 
+
+
+// exports.me = async (req, res) => {
+//   try {
+//     const userConnect = req.user;
+//     // console.log('Utilisateur connecté:', userConnect);
+//     const user = await User.findOne({
+
+//     })
+//     res.status(200).json({
+//       success: true,
+//       user: userConnect
+//     });
+//   } catch (error) {
+//     console.error('Erreur de connexion:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Erreur lors de la connexion',
+//       error: error.message
+//     });
+//   }
+// };
+
+exports.me = async (req, res) => {
+  try {
+    const userConnect = req.user;
+
+    const user = await User.findById(userConnect.id)
+      .populate('experience.specialite')
+      .select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      user
+    });
+  } catch (error) {
+    console.error('Erreur de connexion:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des infos utilisateur',
+      error: error.message
+    });
+  }
+};
+
 
 exports.login = async (req, res) => {
   try {
@@ -77,6 +130,28 @@ exports.login = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la connexion',
+      error: error.message
+    });
+  }
+};
+
+// const { addToBlacklist } = require('./blacklist'); // Assurez-vous d'importer la fonction addToBlacklist
+
+exports.logout = async (req, res) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (token) {
+      addToBlacklist(token);
+    }
+
+    res.json({
+      success: true,
+      message: 'Déconnexion réussie. Token invalidé.'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la déconnexion',
       error: error.message
     });
   }

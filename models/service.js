@@ -16,10 +16,10 @@ const serviceSchema = new mongoose.Schema({
     type: Number,
     min: 0
   },
-  created_at: {
-    type: Date,
-    default: Date.now
-  }
-});
+  // created_at: {
+  //   type: Date,
+  //   default: Date.now
+  // }
+},{ timestamps: true });
 
 module.exports = mongoose.model('Service', serviceSchema);

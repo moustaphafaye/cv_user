@@ -38,6 +38,7 @@ const loginRoute = require('./routes/loginRoutes');
 const avisRoutes = require('./routes/avisRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 app.use('/api/users', userRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/authentification', loginRoute);
@@ -45,6 +46,7 @@ app.use('/api/reservations', reservationRoutes);
 app.use('/api/avis', avisRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Gestion des erreurs
 app.use((err, req, res, next) => {

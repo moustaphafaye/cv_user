@@ -26,10 +26,10 @@ const avisSchema = new mongoose.Schema({
     type: String, // URL ou nom de fichier stocké
     required: false
   },
-  created_at: {
-    type: Date,
-    default: Date.now
-  }
-});
+  // created_at: {
+  //   type: Date,
+  //   default: Date.now
+  // }
+},{ timestamps: true });
 
 module.exports = mongoose.model('Avis', avisSchema);

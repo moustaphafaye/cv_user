@@ -1,23 +1,36 @@
 const mongoose = require('mongoose');
 
 const transactionSchema = new mongoose.Schema({
-    nom_client: {
+    client: {
         type: String,
         required: true
     },
-    montant: {
+    amount: {
         type: Number,
         required: true
     },
     type: {
         type: String,
-        enum: ['paiement', 'remboursement'],
+        enum: ['payment_link', 'payment', 'remboursement'],
         required: true
     },
-    statut: {
+    status: {
         type: String,
         enum: ['complet', 'en attente', 'échoué'],
         required: true
+    },
+    phone: {
+        type: String
+    },
+    date: {
+        type: Date,
+        required: true
+    },
+    paymentLink: {
+        type: String
+    },
+    email: {
+        type: String
     }
 }, {
     timestamps: true // Ajoute createdAt et updatedAt automatiquement
