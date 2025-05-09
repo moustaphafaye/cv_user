@@ -5,14 +5,14 @@ const { sendPaymentLinkEmail } = require('../mail/mailer');
 // Créer une transaction
 
 
+
 // exports.createTransaction = async (req, res) => {
 //   try {
-//     const {
-//       type,
-//       ...data
-//     } = req.body;
+//     let { client, amount, type, status, phone, email, paymentLink, date } = req.body;
 
-//     const errors = validateTransactionData({ type, ...data });
+//     const errors = validateTransactionData({
+//       client, amount, type, status, phone, date,
+//     });
 
 //     if (Object.keys(errors).length > 0) {
 //       return res.status(400).json({
@@ -22,14 +22,28 @@ const { sendPaymentLinkEmail } = require('../mail/mailer');
 //       });
 //     }
 
-//     // Création de l'objet avec seulement les champs valides selon le type
 //     const transactionData = {
-//       ...data,
+//       client,
+//       amount: Number(amount),
 //       type,
+//       status,
+//       phone,
+//       date: date ? new Date(date) : undefined,
 //     };
+
+//     if (type === 'payment_link') {
+//       if (email) transactionData.email = email;
+//       if (paymentLink) transactionData.paymentLink = 'https://pay.example.com/';
+//     }
 
 //     const newTransaction = new Transaction(transactionData);
 //     await newTransaction.save();
+
+//     if (type === 'payment_link' && email) {
+//       console.log(paymentLink);
+
+//       await sendPaymentLinkEmail(email, client, amount, paymentLink);
+//     }
 
 //     return res.status(201).json({
 //       success: true,
@@ -37,7 +51,7 @@ const { sendPaymentLinkEmail } = require('../mail/mailer');
 //       data: newTransaction,
 //     });
 //   } catch (error) {
-//     console.error('Erreur lors de la création de la transaction :', error);
+//     console.error('Erreur création transaction :', error);
 //     res.status(500).json({
 //       success: false,
 //       message: 'Erreur serveur',
@@ -47,19 +61,9 @@ const { sendPaymentLinkEmail } = require('../mail/mailer');
 // };
 
 
-
 exports.createTransaction = async (req, res) => {
   try {
-    let {
-      client,
-      amount,
-      type,
-      status,
-      phone,
-      email,
-      paymentLink,
-      date,
-    } = req.body;
+    let { client, amount, type, status, phone, email, date } = req.body;
 
     const errors = validateTransactionData({
       client,
@@ -87,17 +91,29 @@ exports.createTransaction = async (req, res) => {
       date: date ? new Date(date) : undefined,
     };
 
+    // Si c'est un payment_link, on ajoute email et le lien fixe
     if (type === 'payment_link') {
-      if (email) transactionData.email = email;
-      if (paymentLink) transactionData.paymentLink = paymentLink;
+      transactionData.email = email;
+      const defaultLink = 'https://pay.example.com/links/default-link';
+      transactionData.paymentLink = defaultLink;
+
+      // Création de l'objet Transaction AVANT envoi de mail
+      const newTransaction = new Transaction(transactionData);
+      await newTransaction.save();
+
+      // Envoi de l'email
+      await sendPaymentLinkEmail(email, client, amount, defaultLink);
+
+      return res.status(201).json({
+        success: true,
+        message: 'Transaction créée avec succès',
+        data: newTransaction,
+      });
     }
 
+    // Sinon, transaction normale
     const newTransaction = new Transaction(transactionData);
     await newTransaction.save();
-
-    if (type === 'payment_link' && email) {
-      await sendPaymentLinkEmail(email, client, amount, paymentLink);
-    }
 
     return res.status(201).json({
       success: true,

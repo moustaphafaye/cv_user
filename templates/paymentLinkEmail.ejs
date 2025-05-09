@@ -1,5 +1,37 @@
-<p>Bonjour <%= client %>,</p>
-<p>Vous avez reçu un lien de paiement de <strong><%= amount %> FCFA</strong>.</p>
-<p>Veuillez cliquer sur le lien suivant pour effectuer le paiement :</p>
-<p><a href="<%= paymentLink %>"><%= paymentLink %></a></p>
-<p>Merci.</p>
+<div style="font-family: Arial, sans-serif; color: #333; font-size: 16px; line-height: 1.6;
+            background-image: url('../images/ware-logo.png');
+            background-repeat: no-repeat;
+            background-position: center top;
+            background-size: 120px;
+            padding-top: 140px; padding: 40px;">
+
+
+  <p style="margin-bottom: 20px;"> <strong> Bienvenue à Millenium-placemen</strong>t</p>
+  <p style="margin-bottom: 20px;">Bonjour <strong><%= client %></strong>,</p>
+
+  <p style="margin-bottom: 15px;">Vous avez reçu une demande de paiement de 
+    <strong style="color: #2c7be5;"><%= amount %> FCFA</strong>.
+  </p>
+
+  <p style="margin-bottom: 15px;">
+    Pour procéder au paiement dans l'application Ware, cliquez sur le lien sécurisé ci-dessous :
+  </p>
+
+  <p style="margin-bottom: 20px;">
+    <a href="<%= paymentLink %>" 
+       style="display: inline-block; padding: 12px 24px; background-color: #2c7be5; color: #fff;
+              text-decoration: none; border-radius: 5px; font-weight: bold;" 
+       target="_blank">
+      Ouvrir dans Ware
+    </a>
+  </p>
+
+  <!-- <p style="font-size: 14px; color: #777; margin-bottom: 30px;">
+    Si le bouton ne fonctionne pas, copiez-collez ce lien dans votre navigateur mobile :
+    <br>
+    <a href="<%= paymentLink %>" style="color: #2c7be5;"><%= paymentLink %></a>
+  </p> -->
+
+  <p>Merci pour votre confiance.</p>
+  <p><em>– L'équipe Ware</em></p>
+</div>
