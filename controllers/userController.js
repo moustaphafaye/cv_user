@@ -119,25 +119,31 @@ const { handleValidationError } = require('../utils/fileCleanup');
 
 exports.createUser = async (req, res) => {
   try {
+
     const { userType, password, ...userData } = req.body;
     const files = req.files;
+
     if (files?.photo_profi?.[0]) {
       userData.photo_profi = files.photo_profi[0].filename;
     }
+
     if (files?.cv?.[0]) {
       userData.cv = files.cv[0].filename;
     }
+
     if (files?.certification?.[0]) {
       userData.certification = files.certification[0].filename;
     }
     // 1. Vérification type d'utilisateur
+
+    // if (!['client', 'prestataire'].includes(userType)) {
+    //   return res.status(400).json({ message: 'Type d\'utilisateur invalide' });
+    // }
     if (!['client', 'prestataire'].includes(userType)) {
-      return res.status(400).json({ message: 'Type d\'utilisateur invalide' });
+      return handleValidationError(res, { userType: "Type d'utilisateur invalide" }, req);
     }
 
     // 2. Cas particulier : prestataire avec inscription assistée
-
-
     if (userType === 'prestataire' && userData.type_inscription === 'assister') {
       if (!userData.telephone) {
         return res.status(400).json({ message: 'Le téléphone est requis pour une inscription assistée' });
@@ -168,8 +174,7 @@ exports.createUser = async (req, res) => {
       });
     }
 
-
-    // 3. Parsing des champs JSON si ce n’est pas une inscription assistée
+    // 3. Parsing des champs JSON si ce n’est pas une inscription assistée 
     if (typeof userData.info_person === 'string') {
       userData.info_person = JSON.parse(userData.info_person);
     }
@@ -292,11 +297,12 @@ exports.recherchePrestataires = async (req, res) => {
       .populate('experience.specialite', 'nom tarif_horaire'); // Pour afficher les infos du service
 
     if (prestataires.length === 0) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: true,
         count: prestataires.length,
         data: prestataires,
-        message: 'Aucun prestataire trouvé pour cette localisation et ce service.' });
+        message: 'Aucun prestataire trouvé pour cette localisation avec ce service.'
+      });
     }
 
     res.status(200).json({
@@ -351,7 +357,7 @@ exports.getUserDetails = async (req, res) => {
         message: 'Utilisateur non trouvé'
       });
     }
-   
+
     // stream.pipe(res);
     return res.status(200).json({
       success: true,
@@ -384,15 +390,41 @@ exports.getUserPhoto = async (req, res) => {
       return res.status(404).json({ message: 'Fichier image introuvable' });
     }
 
-    const ext = path.extname(photoPath).toLowerCase();
-    const mimeTypes = {
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.png': 'image/png',
-      '.gif': 'image/gif',
-    };
+    // const ext = path.extname(photoPath).toLowerCase();
+    // const mimeTypes = {
+    //   '.jpg': 'image/jpeg',
+    //   '.jpeg': 'image/jpeg',
+    //   '.png': 'image/png',
+    //   '.gif': 'image/gif',
+    // };
 
-    res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+    // res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+
+    const stream = fs.createReadStream(photoPath);
+    stream.pipe(res);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+
+exports.getUserCv = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await User.findById(userId);
+    if (!user || !user.cv) {
+      return res.status(404).json({ message: 'Photo non trouvée' });
+    }
+    // const photoPath = path.resolve(__dirname, '..', 'uploads/cv/1746551774537_01RPA-2024-volume-1-reduit.pdf');
+    const relativePath = 'uploads/cv/' + user.cv;
+    const photoPath = path.resolve(__dirname, '..', relativePath);
+
+    if (!fs.existsSync(photoPath)) {
+      return res.status(404).json({ message: 'Fichier image introuvable' });
+    }
+
+    const ext = path.extname(photoPath).toLowerCase();
 
     const stream = fs.createReadStream(photoPath);
     stream.pipe(res);
@@ -405,54 +437,184 @@ exports.getUserPhoto = async (req, res) => {
 
 
 
-// exports.getUserDetails = async (req, res) => {
+exports.getUserCertification = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await User.findById(userId);
+    if (!user || !user.certification) {
+      return res.status(404).json({ message: 'Photo non trouvée' });
+    }
+    // const photoPath = path.resolve(__dirname, '..', 'uploads/certification/1746551774537_01RPA-2024-volume-1-reduit.pdf');
+    const relativePath = 'uploads/certifications/' + user.certification;
+    const photoPath = path.resolve(__dirname, '..', relativePath);
+
+    if (!fs.existsSync(photoPath)) {
+      return res.status(404).json({ message: 'Fichier image introuvable' });
+    }
+
+    // const ext = path.extname(photoPath).toLowerCase();
+
+    const stream = fs.createReadStream(photoPath);
+    stream.pipe(res);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+
+
+
+
+// exports.updateDocument = async (req, res) => {
 //   try {
 //     const userId = req.params.id;
 
-//     if (!mongoose.Types.ObjectId.isValid(userId)) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'ID utilisateur invalide'
-//       });
+//     // Déterminer quel fichier a été envoyé
+//     let field = null;
+//     if (req.files?.cv) field = 'cv';
+//     else if (req.files?.certification) field = 'certification';
+//     else if (req.files?.photo_profi) field = 'photo_profi';
+
+//     if (!field) {
+//       return res.status(400).json({ message: 'Aucun fichier fourni (cv, certification ou photo).' });
 //     }
 
-//     const user = await User.findById(userId)
-//       .populate('experience.specialite')
-//       .select('-password');
+//     const file = req.files[field][0];
+//     const user = await User.findById(userId);
 
 //     if (!user) {
-//       return res.status(404).json({
-//         success: false,
-//         message: 'Utilisateur non trouvé'
+//       // Supprimer le fichier uploadé si l'utilisateur n'existe pas
+//       fs.unlink(file.path, () => {});
+//       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+//     }
+
+//     // Supprimer l'ancien fichier si présent
+//     const oldFile = user[field];
+//     if (oldFile) {
+//       const uploadFolder = 
+//         field === 'cv' ? 'cv' :
+//         field === 'certification' ? 'certifications' :
+//         field === 'photo_profi' ? 'photos' : '';
+
+//       const oldFilePath = path.join(__dirname, '..', 'uploads', uploadFolder, oldFile);
+//       fs.unlink(oldFilePath, (err) => {
+//         if (err) console.warn(`Erreur suppression ancien fichier ${field}:`, err.message);
 //       });
 //     }
 
-//     const userData = user.toObject();
+//     // Mise à jour dans la base de données
+//     user[field] = file.filename;
+//     await user.save();
 
-//     // Lire et encoder la photo si elle existe
-//     if (userData.photo_profi) {
-//       const imagePath = path.join(__dirname, '../public/uploads/', userData.photo_profi);
-//       if (fs.existsSync(imagePath)) {
-//         const imageBuffer = fs.readFileSync(imagePath);
-//         userData.photo_profi_base64 = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
-//       } else {
-//         userData.photo_profi_base64 = null;
-//       }
-//     }
-
-//     return res.status(200).json({
-//       success: true,
-//       data: userData
+//     res.status(200).json({
+//       message: `${field.toUpperCase()} mis à jour avec succès.`,
+//       [field]: user[field],
 //     });
 
-//   } catch (error) {
-//     console.error('Erreur lors de la récupération du détail utilisateur :', error);
-//     return res.status(500).json({
-//       success: false,
-//       message: 'Erreur serveur',
-//       error: error.message
-//     });
+//   } catch (err) {
+//     console.error('Erreur lors de la mise à jour du document:', err);
+//     res.status(500).json({ message: 'Erreur serveur', error: err.message });
 //   }
 // };
+
+exports.updateDocument = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Détection automatique du champ envoyé parmi ceux autorisés
+    const allowedFields = {
+      cv: 'cv',
+      certification: 'certifications',
+      photo_profi: 'photos',
+    };
+
+    const field = Object.keys(allowedFields).find((key) => req.files?.[key]);
+
+    if (!field) {
+      return res.status(400).json({ message: 'Aucun fichier fourni (cv, certification ou photo_profi).' });
+    }
+
+    const file = req.files[field][0];
+
+    const user = await User.findById(userId);
+    if (!user) {
+      fs.unlink(file.path, () => { });
+      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+    }
+
+    // Supprimer l'ancien fichier s'il existe
+    const oldFile = user[field];
+    if (oldFile) {
+      const oldFilePath = path.join(__dirname, '..', 'uploads', allowedFields[field], oldFile);
+      fs.unlink(oldFilePath, (err) => {
+        if (err) {
+          console.warn(`Erreur suppression ancien fichier ${field}:`, err.message);
+        }
+      });
+    }
+
+    // Mise à jour
+    user[field] = file.filename;
+    await user.save();
+
+    res.status(200).json({
+      message: `${field.toUpperCase()} mis à jour avec succès.`,
+      [field]: user[field],
+    });
+
+  } catch (err) {
+    console.error('Erreur lors de la mise à jour du document:', err);
+    res.status(500).json({ message: 'Erreur serveur', error: err.message });
+  }
+};
+
+// exports.updateDocument = async (req, res) => {
+//   try {
+//     const userId = req.params.id;
+
+//     // Vérifier quel champ est présent (cv ou certification)
+//     const field = req.files?.cv ? 'cv' : req.files?.certification ? 'certification' : req.files?.photo_profi ? 'photo_profi'  : null;
+
+//     if (!field) {
+//       return res.status(400).json({ message: 'Aucun fichier fourni (cv ou certification).' });
+//     }
+
+//     const file = req.files[field][0];
+//     const user = await User.findById(userId);
+
+//     if (!user) {
+//       // Supprimer le fichier si l'utilisateur n'existe pas
+//       fs.unlink(file.path, () => {});
+//       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+//     }
+
+//     // Supprimer l'ancien fichier si présent
+//     const oldFile = user[field];
+//     if (oldFile) {
+//       const oldFilePath = path.join(__dirname, '..', 'uploads', field === 'cv' ? 'cv' : field === 'certification' ? 'certifications': field === 'photo_profi' ? 'photos' : ' ', oldFile);
+//       fs.unlink(oldFilePath, (err) => {
+//         if (err) console.warn(`Erreur suppression ancien fichier ${field}:`, err.message);
+//       });
+//     }
+
+//     // Mise à jour dans la base de données
+//     user[field] = file.filename;
+//     await user.save();
+
+//     res.status(200).json({
+//       message: `${field.toUpperCase()} mis à jour avec succès.`,
+//       [field]: user[field],
+//     });
+
+//   } catch (err) {
+//     console.error('Erreur lors de la mise à jour du document:', err);
+//     res.status(500).json({ message: 'Erreur serveur', error: err.message });
+//   }
+// };
+
+
+
+
 
 

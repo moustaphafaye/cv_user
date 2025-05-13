@@ -1,6 +1,6 @@
 const Service = require('../models/service');
 const transporter = require("../mail/mailer"); // Importez le transporteur Nodemailer
-
+const pusher = require("../config/pusher");
 // Créer un nouveau service
 exports.createService = async (req, res) => {
     try {
@@ -25,6 +25,20 @@ exports.createService = async (req, res) => {
         });
 
         await newService.save();
+
+        // const io = req.app.get('io');
+        // io.emit('notification', {
+        //     title: 'Nouveau service',
+        //     message: `Le service "${newService.nom}" a été ajouté.`,
+        //     data: newService
+        // });
+
+        pusher.trigger('services-channel', 'service-created', {
+            title: 'Nouveau service',
+            message: `Le service "${newService.nom}" a été ajouté.`,
+            data: newService
+          });
+      
 
         res.status(201).json({
             success: true,
